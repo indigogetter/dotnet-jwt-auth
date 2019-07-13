@@ -1,0 +1,47 @@
+using System;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Indigogetter.WebService.Auth
+{
+    public static class PasswordHelper
+    {
+        private static readonly RNGCryptoServiceProvider _randomNumberGenerator = new RNGCryptoServiceProvider();
+
+        public static byte[] GenerateSalt()
+        {
+            var salt = new byte[Constants.SaltLength];
+            _randomNumberGenerator.GetBytes(salt);
+
+            return salt;
+        }
+
+        public static byte[] GeneratePasswordHash(string password, byte[] salt)
+        {
+            if (String.IsNullOrWhiteSpace(password))
+                throw new Exception("Password may not be null or whitespace.");
+
+            byte[] computedHash;
+            using (var sha512 = SHA512.Create())
+            {
+                var inputArray = Enumerable.Concat(salt, Encoding.Unicode.GetBytes(password)).ToArray();
+                computedHash = sha512.ComputeHash(inputArray);
+            }
+
+            return computedHash;
+        }
+
+        public static bool VerifyPassword(string password, byte[] salt, byte[] storedHash)
+        {
+            if (String.IsNullOrWhiteSpace(password))
+                return false;
+
+            var currentHash = GeneratePasswordHash(password, salt);
+            Console.WriteLine($"New Hash:   [{BitConverter.ToString(currentHash)}]");
+            Console.WriteLine($"Saved Hash: [{BitConverter.ToString(storedHash)}]");
+
+            return currentHash.SequenceEqual(storedHash);
+        }
+    }
+}

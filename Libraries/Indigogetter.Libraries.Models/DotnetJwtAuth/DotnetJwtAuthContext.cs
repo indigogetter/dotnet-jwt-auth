@@ -1,0 +1,49 @@
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+
+namespace Indigogetter.Libraries.Models.DotnetJwtAuth
+{
+    public class DotnetJwtAuthContext : DbContext
+    {
+        public virtual DbSet<User> User { get; set; }
+
+        public DotnetJwtAuthContext() { }
+
+        public DotnetJwtAuthContext(DbContextOptions<DotnetJwtAuthContext> options) : base(options) { }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.HasAnnotation("ProductVersion", "2.2.4-servicing-10062");
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("user", "dotnetjwtauth");
+
+                entity.Property(e => e.UserId).HasColumnType("bigint(20)");
+
+                entity.Property(e => e.Email)
+                    .IsRequired()
+                    .HasMaxLength(320)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.PasswordHash)
+                    .IsRequired()
+                    .HasColumnType("binary(64)");
+
+                entity.Property(e => e.PasswordSalt)
+                    .IsRequired()
+                    .HasColumnType("binary(64)");
+
+                entity.Property(e => e.UserCreateDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.UserModifiedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.Username)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+            });
+        }
+    }
+}

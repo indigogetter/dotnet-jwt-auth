@@ -1,34 +1,93 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using MySql.Data.EntityFrameworkCore.Extensions;
+using Indigogetter.WebService.Auth.Config;
+using Indigogetter.WebService.Auth.Services;
+using Indigogetter.Libraries.Models.DotnetJwtAuth;
 
 namespace Indigogetter.WebService.Auth
 {
     public class Startup
     {
+        public IConfiguration Configuration { get; }
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
-
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
+            // Pull in the connection string from the environment variables.
+            // On Windows environments this may be set via:
+            //      Control Panel => System Security => System => Advanced System Settings => Environment Variables
+            // On Linux environments this may be set in the file:
+            //      /etc/environment
+            var connectionString = Environment.GetEnvironmentVariable("AUTH_CONNECTION_STRING");
+            services.AddDbContext<DotnetJwtAuthContext>(options => options.UseMySQL(connectionString));
+
+            // The appsettings.json and appsettings.<environmentName>.json configuration files were read in
+            // Program.cs initialization.  Call Configuration.GetSection("<SectionName>") to access the configured
+            // values.
+            var jwtSection = Configuration.GetSection("JwtConfig");
+            var authConfig = jwtSection.Get<AuthConfig>();
+            var secretKey = Encoding.ASCII.GetBytes(authConfig.Secret);
+            Console.WriteLine(authConfig.Secret);
+            services.AddAuthentication(options =>
+            {
+                // Indicate that requests should be challenged by default using a JWT bearer authentication scheme,
+                // i.e. check the "Authentication" http/https header for a value of "Bearer <encodedJwtToken>" on
+                // every request where the controller or the action has an [Authorize] attribute (unless overridden
+                // with the [AllowAnonymous] attribute).
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    // Encoded info must indicate it was issued by the JwtConfig.Issuer value defined in appsettings.
+                    ValidIssuer = authConfig.Issuer,
+                    // Encoded info must indicate it is being used by the JwtConfig.Audience value defined in appsettings.
+                    ValidAudience = authConfig.Audience,
+                    // This value is used to encrypt/decrypt the JWT token returned to the user on sign-in and, while the
+                    // encoded token is sent to the user, the security key is not.
+                    IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true
+                };
+            });
+
+            // Take advantage of the built-in dependency injection model via the services IServiceCollection.
+            // Singleton instances are shared for every request over the life of the hosted process.
+            services.AddSingleton<IAuthConfig>(authConfig);
+
+            // Scoped instances are generated anew for each request.
+            services.AddScoped<IUserService, UserService>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
@@ -41,7 +100,16 @@ namespace Indigogetter.WebService.Auth
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            // Set the global cors policy.
+            app.UseCors(policyBuilder => policyBuilder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
+
+            // Indicate that the hosted application should use the configured default authentication scheme (JWT).
+            app.UseAuthentication();
+
+            // app.UseHttpsRedirection();
             app.UseMvc();
         }
     }

@@ -22,6 +22,13 @@ dotnet publish -c Release -o bin/out
 
 ## Running the API
 
+In order to run the API in development, staging or production, the following environment variables will need to be established:
+
+```
+ASPNETCORE_ENVIRONMENT="Development|Staging|Production"
+AUTH_CONNECTION_STRING="*****"
+```
+
 From the project root:
 
 ```
