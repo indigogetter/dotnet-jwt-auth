@@ -1,10 +1,10 @@
 # dotnet-jwt-auth
 
-This project was developed targeting dotnet core v2.2.203.  It provides an example of a custom built JWT authentication scheme.
+This project was developed targeting dotnet core v2.2.203.  It provides an example of a custom built JWT authentication scheme in the context of a project management system.
 
 SQL scripts were written for a MySQL database engine.  My development environment used MySQL Workbench v8.0.16.
 
-The front-end is developed using the ReactJS framework, initialized with `npx create-react-app`.
+The front-end is developed using the ReactJS framework, initialized with `npx create-react-app`.  It uses a redux centralized store.
 
 The project provides a basis and may be extended into something more production ready by creating SSL certificates to communicate over https, or by placing the project behind a reverse proxy such as NGINX.  In such a scenario, it is highly recommended that the consumer review and revise the choice of database name (DotnetJwtAuth) and project namespaces (Indigogetter.*).  I recommend using this guide as a guide -- file by file -- rather than cloning or forking the project blindly.  To maximize the benefit of a thorough review, comments have been placed throughout to facilitate knowledge transfer.
 
