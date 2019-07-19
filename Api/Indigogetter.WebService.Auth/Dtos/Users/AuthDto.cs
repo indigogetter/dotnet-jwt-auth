@@ -12,5 +12,10 @@ namespace Indigogetter.WebService.Auth.Dtos.Users
 
         [Required]
         public string Password { get; set; }
+
+        public override string ToString()
+        {
+            return $"Username: {Username}, Password: [{Password.Length} characters]";
+        }
     }
 }

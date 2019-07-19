@@ -12,6 +12,7 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
         public long UserId { get; set; }
         public DateTime ProjectCreatedDate { get; set; }
         public DateTime ProjectModifiedDate { get; set; }
+        public byte IsDeleted { get; set; }
 
         public virtual User User { get; set; }
     }

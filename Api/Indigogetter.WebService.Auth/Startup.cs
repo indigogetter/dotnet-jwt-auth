@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using MySql.Data.EntityFrameworkCore.Extensions;
 using Indigogetter.WebService.Auth.Config;
 using Indigogetter.WebService.Auth.Services;
@@ -32,6 +34,10 @@ namespace Indigogetter.WebService.Auth
 
         public void ConfigureServices(IServiceCollection services)
         {
+            // Indicate that we would like to use AutoMapper to transcribe data between the data models (Indigogetter.Libraries.Models)
+            // and the data transfer objects (Indigogetter.WebService.Auth.Dtos).
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
             services.AddCors();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
@@ -84,8 +90,12 @@ namespace Indigogetter.WebService.Auth
             // Singleton instances are shared for every request over the life of the hosted process.
             services.AddSingleton<IAuthConfig>(authConfig);
 
+            // Register the HttpContextAccessor to enable us to retrieve claims from the JWT, such as UserId.
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
             // Scoped instances are generated anew for each request.
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IProjectService, ProjectService>();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

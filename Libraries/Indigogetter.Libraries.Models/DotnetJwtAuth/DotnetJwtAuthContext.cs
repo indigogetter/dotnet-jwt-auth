@@ -28,6 +28,10 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
 
                 entity.Property(e => e.Content).HasColumnType("longtext");
 
+                entity.Property(e => e.IsDeleted)
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("0");
+
                 entity.Property(e => e.ProjectCreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.ProjectModifiedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -60,6 +64,14 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
                     .IsRequired()
                     .HasMaxLength(50)
                     .IsUnicode(false);
+
+                entity.Property(e => e.IsDeleted)
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.IsLocked)
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("0");
 
                 entity.Property(e => e.LastName)
                     .IsRequired()

@@ -20,6 +20,8 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
         public string LastName { get; set; }
         public DateTime UserCreatedDate { get; set; }
         public DateTime UserModifiedDate { get; set; }
+        public byte IsDeleted { get; set; }
+        public byte IsLocked { get; set; }
 
         public virtual ICollection<Project> Project { get; set; }
     }
