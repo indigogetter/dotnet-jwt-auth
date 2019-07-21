@@ -51,7 +51,10 @@ namespace Indigogetter.WebService.Auth.Controllers
             if (project == null)
                 return BadRequest(new { Message = "Failed to create project." });
 
-            return Ok(_mapper.Map<CreateProjectDto>(project));
+            var projectResponseDto = _mapper.Map<CreateProjectDto>(project);
+            projectResponseDto.ProjectOwner = _mapper.Map<ReadUserDto>(project.User);
+
+            return Ok(projectResponseDto);
         }
 
         [HttpGet("read")]
