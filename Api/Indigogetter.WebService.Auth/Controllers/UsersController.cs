@@ -48,7 +48,7 @@ namespace Indigogetter.WebService.Auth.Controllers
             var user = _userService.Authenticate(authDto.Username, authDto.Password);
 
             if (user == null)
-                return BadRequest(new { Message = "Username or password is incorrect." });
+                return Unauthorized(new { Message = "Username or password is incorrect." });
 
             var tokenExpiration = DateTime.Now.AddDays(7);
             var tokenHandler = new JwtSecurityTokenHandler();
