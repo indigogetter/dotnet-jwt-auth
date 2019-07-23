@@ -1,20 +1,27 @@
+import { projectConstants } from '../../config/constants';
+
 const initState = {
-    projects: [
-        {id: '1', title: 'help me find peach', content: 'some content goes here'},
-        {id: '2', title: 'collect all the stars', content: 'foo bar bizz baz'},
-        {id: '3', title: 'egg hunt with yoshi', content: 'blah blah blah'},
-    ]
+    projects: {
+        '1': {id: '1', title: 'help me find peach', content: 'some content goes here'},
+        '2': {id: '2', title: 'collect all the stars', content: 'foo bar bizz baz'},
+        '3': {id: '3', title: 'egg hunt with yoshi', content: 'blah blah blah'},
+    }
 };
 
 const projectReducer = (state = initState, action) => {
     switch (action.type) {
-        case 'CREATE_PROJECT':
+        case projectConstants.CREATE_PROJECT:
+            console.log('attempting to create project', action.project);
+            return state;
+        case projectConstants.CREATE_PROJECT_SUCCESS:
             console.log('created project', action.project);
-            break;
+            return state;
+        case projectConstants.CREATE_PROJECT_ERROR:
+            console.log(`create project error`, action.err);
+            return state;
         default:
-            break;
+            return state;
     }
-    return state;
 }
 
 export default projectReducer;

@@ -1,11 +1,27 @@
 import axios from 'axios';
 import { apiConstants, projectConstants } from '../../config/constants';
 
-const testAuthToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9leHBpcmF0aW9uIjoiNy8yNi8yMDE5IDE6MDg6NTAgUE0iLCJuYmYiOjE1NjM1NTk3MzAsImV4cCI6MTU2NDE2NDUzMCwiaWF0IjoxNTYzNTU5NzMwLCJpc3MiOiJodHRwczovL2Rldi5qd3QuaW5kaWdvZ2V0dGVyIiwiYXVkIjoiZGV2Lmp3dC5pbmRpZ29nZXR0ZXIifQ.R9lL5nnhr-Rz1hSJ8aRHOnTGuwEzTzRPV0qtzhqZk0s';
-
 export const createProject = (project) => {
     return (dispatch, getState) => {
+        const authenticatedUser = getState().auth.authenticatedUser;
         // make async call to database
-        dispatch({ type: projectConstants.CREATE_PROJECT, project });
+        const url = `${apiConstants.projectsController}/create`;
+        const data = {
+            'title': project.title,
+            'content': project.content,
+        };
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authenticatedUser && authenticatedUser.token}`,
+        };
+        axios.post(
+            url,
+            data,
+            headers
+        ).then((projectDto) => {
+            dispatch({ type: projectConstants.CREATE_PROJECT_SUCCESS, project: projectDto });
+        }).catch((err) => {
+            dispatch({ type: projectConstants.CREATE_PROJECT_ERROR, err });
+        });
     }
 };
