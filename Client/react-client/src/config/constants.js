@@ -34,6 +34,7 @@ export const persistenceConstants = {
 
     'INDEX_KEY': 'INDEX_KEY',
     'LAST_ACCESSED_KEY': 'LAST_ACCESSED_KEY',
+    'MAX_COOKIE_WRITE_ATTEMPTS': 8,
 
     // Expire 'Tier A' after 30 days
     'EXPIRATION_MILLISECONDS_TIER_A': 30 * 24 * 60 * 60 * 1000,
