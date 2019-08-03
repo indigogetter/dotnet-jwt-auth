@@ -13,59 +13,62 @@ const localStorageStrategyImpl = (() => {
     // 5. Return the exposed public methods.
 
     // read the previously stored keys into memory
-    let index = {};
-    let lastAccessed = 0;
-    const readKeysIntoMemory = () => {
+    const privateProps = {
+        index: {},
+        lastAccessed: 0
+    };
+    console.log(`localStorageStrategyImpl ${JSON.stringify(privateProps)}`);
+    const readKeysIntoMemory = (privateProps) => {
         try {
             // key = name of item stored
             // value = tier number
-            index = JSON.parse(localStorage.getItem(persistenceConstants.INDEX_KEY));
+            privateProps.index = JSON.parse(localStorage.getItem(persistenceConstants.INDEX_KEY)) || {};
         } catch (err) {
             console.error('Encountered an error while trying to read keys into memory.', err);
         }
     };
-    const writeKeysToStorage = () => {
+    const writeKeysToStorage = (privateProps) => {
         try {
-            localStorage.setItem(persistenceConstants.INDEX_KEY, JSON.stringify(index));
+            localStorage.setItem(persistenceConstants.INDEX_KEY, JSON.stringify(privateProps.index));
         } catch (err) {
             console.error('Encountered an error while writing keys to localStorage.', err);
         }
     };
     const readLastAccessTime = () => JSON.parse(localStorage.getItem(persistenceConstants.LAST_ACCESSED_KEY) || '0');
-    const setLastAccessTime = () => {
-        lastAccessed = Date.now();
-        localStorage.setItem(persistenceConstants.LAST_ACCESSED_KEY, JSON.stringify(lastAccessed));
+    const setLastAccessTime = (privateProps) => {
+        privateProps.lastAccessed = Date.now();
+        localStorage.setItem(persistenceConstants.LAST_ACCESSED_KEY, JSON.stringify(privateProps.lastAccessed));
     };
-    const conditionallyClearItem = (key, tier, elapsedMilliseconds) => {
+    const conditionallyClearItem = (privateProps, key, tier, elapsedMilliseconds) => {
         switch (tier) {
             case persistenceConstants.TIER_A:
                 if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_A) {
                     localStorage.removeItem(key);
-                    delete index[key];
+                    delete privateProps.index[key];
                 }
                 break;
             case persistenceConstants.TIER_B:
                 if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_B) {
                     localStorage.removeItem(key);
-                    delete index[key];
+                    delete privateProps.index[key];
                 }
                 break;
             case persistenceConstants.TIER_C:
                 if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_C) {
                     localStorage.removeItem(key);
-                    delete index[key];
+                    delete privateProps.index[key];
                 }
                 break;
             case persistenceConstants.TIER_D:
                 if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_D) {
                     localStorage.removeItem(key);
-                    delete index[key];
+                    delete privateProps.index[key];
                 }
                 break;
             case persistenceConstants.TIER_E:
                 if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_E) {
                     localStorage.removeItem(key);
-                    delete index[key];
+                    delete privateProps.index[key];
                 }
                 break;
             default:
@@ -73,63 +76,64 @@ const localStorageStrategyImpl = (() => {
                 return null;
         }
     };
-    const clearExpired = () => {
+    const clearExpired = (privateProps) => {
         const now = Date.now();
         // lastAccessed is maintained in memory prior to the first invocation of this method
-        const elapsedMilliseconds = now - lastAccessed;
+        const elapsedMilliseconds = now - privateProps.lastAccessed;
+        console.log(`clearExpired ${JSON.stringify(privateProps)}`);
         // build the key collection one tier at a time
-        let keys = Object.keys(index);
+        let keys = Object.keys(privateProps.index);
         for (let i = 0; i < keys.length; i++) {
             const currentKey = keys[i];
-            const tier = index[currentKey];
-            conditionallyClearItem(currentKey, tier, elapsedMilliseconds);
+            const tier = privateProps.index[currentKey];
+            conditionallyClearItem(privateProps, currentKey, tier, elapsedMilliseconds);
         }
     };
 
     // invoke the read keys method and clear the expired ones
-    lastAccessed = readLastAccessTime();
-    readKeysIntoMemory();
-    clearExpired();
+    privateProps.lastAccessed = readLastAccessTime();
+    readKeysIntoMemory(privateProps);
+    clearExpired(privateProps);
 
-    const get = (key) => {
-        const tier = index[key];
+    const get = (privateProps, key) => {
+        const tier = privateProps.index[key];
         const now = Date.now();
         // lastAccessed is maintained in memory prior to the first invocation of this method
-        const elapsedMilliseconds = now - lastAccessed;
-        conditionallyClearItem(key, tier, elapsedMilliseconds);
-        setLastAccessTime();
+        const elapsedMilliseconds = now - privateProps.lastAccessed;
+        conditionallyClearItem(privateProps, key, tier, elapsedMilliseconds);
+        setLastAccessTime(privateProps);
         return JSON.parse(localStorage.getItem(key));
     };
-    const set = (key, value, tier = persistenceConstants.TIER_E) => {
-        index[key] = tier;
+    const set = (privateProps, key, value, tier = persistenceConstants.TIER_E) => {
+        privateProps.index[key] = tier;
         localStorage.setItem(key, JSON.stringify(value));
-        setLastAccessTime();
-        writeKeysToStorage();
+        setLastAccessTime(privateProps);
+        writeKeysToStorage(privateProps);
     };
-    const remove = (key) => {
-        delete index[key];
+    const remove = (privateProps, key) => {
+        delete privateProps.index[key];
         localStorage.removeItem(key);
-        setLastAccessTime();
-        writeKeysToStorage();
+        setLastAccessTime(privateProps);
+        writeKeysToStorage(privateProps);
     };
-    const reset = (tier) => {
-        const keys = Object.keys(index);
+    const reset = (privateProps, tier) => {
+        const keys = Object.keys(privateProps.index);
         for (let i = 0; i < keys.length; i++) {
             const currentKey = keys[i];
-            const currentTier = index[currentKey];
+            const currentTier = privateProps.index[currentKey];
             if (currentTier < tier) continue;
             // pass in the maximum value of elapsed milliseconds plus one to ensure that the item is deleted
             // the tier passed into the method doesn't matter, but use the input parameter anyway
-            conditionallyClearItem(currentKey, tier, persistenceConstants.EXPIRATION_MILLISECONDS_TIER_A + 1);
+            conditionallyClearItem(privateProps, currentKey, tier, persistenceConstants.EXPIRATION_MILLISECONDS_TIER_A + 1);
         }
     };
 
     // expose the public methods
     const clientStorageInstance = {
-        'get': get,
-        'set': set,
-        'remove': remove,
-        'reset': reset,
+        'get': (key) => get(privateProps, key),
+        'set': (key, value, tier) => set(privateProps, key, value, tier),
+        'remove': (key) => remove(privateProps, key),
+        'reset': (tier) => reset(privateProps, tier),
     };
 
     return clientStorageInstance;
@@ -152,11 +156,13 @@ const cookieCrumbStorageStrategyImpl = (() => {
     // 5. Return the exposed public methods.
 
     // read the previously stored keys into memory
-    let index = {};
-    let inMemoryStorage = {};
-    let lastAccessed = 0;
-    const crumbPrefix = 'crumbled_';
-    const gatherCrumbs = (crumbledCookieStore, restoredKeys) => {
+    const privateProps = {
+        index: {},
+        inMemoryStorage: {},
+        lastAccessed: 0,
+        crumbPrefix: 'crumbled_',
+    };
+    const gatherCrumbs = (privateProps, crumbledCookieStore, restoredKeys) => {
         for (let key in restoredKeys) {
             let sortedCrumbKeys = restoredKeys[key].sort();
             let nextCrumbKey = null;
@@ -165,13 +171,13 @@ const cookieCrumbStorageStrategyImpl = (() => {
                 unparsedValue += crumbledCookieStore[nextCrumbKey];
             }
             if (key === persistenceConstants.INDEX_KEY) {
-                index = JSON.parse(decodeURIComponent(unparsedValue));
+                privateProps.index = JSON.parse(decodeURIComponent(unparsedValue));
             } else {
-                inMemoryStorage[key] = JSON.parse(decodeURIComponent(unparsedValue));
+                privateProps.inMemoryStorage[key] = JSON.parse(decodeURIComponent(unparsedValue));
             }
         }
     };
-    const readKeysIntoMemory = () => {
+    const readKeysIntoMemory = (privateProps) => {
         try {
             // key = name of item stored
             // value = tier number
@@ -180,10 +186,10 @@ const cookieCrumbStorageStrategyImpl = (() => {
             const restoredKeys = {};
             cookies.split(/;[ ]?/).forEach((keyValPair) => {
                 const [key, value] = keyValPair.split('=');
-                if (key.indexOf(crumbPrefix) !== -1) {
+                if (key.indexOf(privateProps.crumbPrefix) !== -1) {
                     tempStore[key] = value;
                     // strip away the prefix and crumb serial number
-                    const strippedKey = key.substr(key.indexOf(crumbPrefix)).split('-')[0];
+                    const strippedKey = key.substr(key.indexOf(privateProps.crumbPrefix)).split('-')[0];
                     // maintain as the value for the stripped key, the associated collection of
                     // keys for the cookie store
                     if (!!restoredKeys[strippedKey]) {
@@ -193,7 +199,7 @@ const cookieCrumbStorageStrategyImpl = (() => {
                     }
                 }
             });
-            gatherCrumbs(tempStore, restoredKeys);
+            gatherCrumbs(privateProps, tempStore, restoredKeys);
         } catch (err) {
             console.error('Encountered an error while trying to read keys into memory.', err);
         }
@@ -209,14 +215,14 @@ const cookieCrumbStorageStrategyImpl = (() => {
         }
         return newKeyValPairs;
     };
-    const writeKeysToStorage = () => {
+    const writeKeysToStorage = (privateProps) => {
         // need a helper function to map number of crumbs (1, 2, 4, 8, etc.) => binary string ('', '1', '11', '111', etc.)
         try {
             // localStorage.setItem(persistenceConstants.INDEX_KEY, JSON.stringify(index));
-            const initialCookieKey = `${crumbPrefix}${persistenceConstants.INDEX_KEY}-`;
+            const initialCookieKey = `${privateProps.crumbPrefix}${persistenceConstants.INDEX_KEY}-`;
             const expirationMilliseconds = Date.now() + persistenceConstants.EXPIRATION_MILLISECONDS_TIER_A;
             const expirationDate = new Date(expirationMilliseconds);
-            let crumbledKeyValuePairs = { [initialCookieKey]: encodeURIComponent(JSON.stringify(index)) };
+            let crumbledKeyValuePairs = { [initialCookieKey]: encodeURIComponent(JSON.stringify(privateProps.index)) };
             for (let attemptsToWrite = 0; attemptsToWrite < persistenceConstants.MAX_COOKIE_WRITE_ATTEMPTS; attemptsToWrite++) {
                 try {
                     for (let crumbleKey in crumbledKeyValuePairs) {
@@ -243,111 +249,51 @@ const cookieCrumbStorageStrategyImpl = (() => {
         });
         return parsedLastAccessedTime;
     };
-    const setLastAccessTime = () => {
+    const setLastAccessTime = (privateProps) => {
         const expirationMilliseconds = Date.now() + persistenceConstants.EXPIRATION_MILLISECONDS_TIER_A;
         const expirationDate = new Date(expirationMilliseconds);
-        lastAccessed = Date.now();
-        document.cookie = `${persistenceConstants.LAST_ACCESSED_KEY}=${JSON.stringify(lastAccessed)};expires=${expirationDate.toUTCString()};path=/`
+        privateProps.lastAccessed = Date.now();
+        document.cookie = `${persistenceConstants.LAST_ACCESSED_KEY}=${JSON.stringify(privateProps.lastAccessed)};expires=${expirationDate.toUTCString()};path=/`
     };
-    // const conditionallyClearItem = (key, tier, elapsedMilliseconds) => {
-    //     const longPastExpiredDate = new Date(1970, 1, 1, 0, 0, 0, 0);
-    //     switch (tier) {
-    //         case persistenceConstants.TIER_A:
-    //             if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_A) {
-    //                 document.cookie = `${key}=;expires=${longPastExpiredDate.toUTCString()};path=/`
-    //                 delete index[key];
-    //                 delete inMemoryStorage[key];
-    //             }
-    //             break;
-    //         case persistenceConstants.TIER_B:
-    //             if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_B) {
-    //                 document.cookie = `${key}=;expires=${longPastExpiredDate.toUTCString()};path=/`
-    //                 delete index[key];
-    //                 delete inMemoryStorage[key];
-    //             }
-    //             break;
-    //         case persistenceConstants.TIER_C:
-    //             if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_C) {
-    //                 document.cookie = `${key}=;expires=${longPastExpiredDate.toUTCString()};path=/`
-    //                 delete index[key];
-    //                 delete inMemoryStorage[key];
-    //             }
-    //             break;
-    //         case persistenceConstants.TIER_D:
-    //             if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_D) {
-    //                 document.cookie = `${key}=;expires=${longPastExpiredDate.toUTCString()};path=/`
-    //                 delete index[key];
-    //                 delete inMemoryStorage[key];
-    //             }
-    //             break;
-    //         case persistenceConstants.TIER_E:
-    //             if (elapsedMilliseconds > persistenceConstants.EXPIRATION_MILLISECONDS_TIER_E) {
-    //                 document.cookie = `${key}=;expires=${longPastExpiredDate.toUTCString()};path=/`
-    //                 delete index[key];
-    //                 delete inMemoryStorage[key];
-    //             }
-    //             break;
-    //         default:
-    //             console.warn(`Undefined tier '${tier}' specified for key '${key}'.`);
-    //             return null;
-    //     }
-    // };
-    // const clearExpired = () => {
-    //     const now = Date.now();
-    //     // lastAccessed is maintained in memory prior to the first invocation of this method
-    //     const elapsedMilliseconds = now - lastAccessed;
-    //     // build the key collection one tier at a time
-    //     let keys = Object.keys(index);
-    //     for (let i = 0; i < keys.length; i++) {
-    //         const currentKey = keys[i];
-    //         const tier = index[currentKey];
-    //         conditionallyClearItem(currentKey, tier, elapsedMilliseconds);
-    //     }
-    // };
 
     // invoke the read keys method and clear the expired ones
-    lastAccessed = readLastAccessTime();
-    readKeysIntoMemory();
-    // clearExpired();
+    privateProps.lastAccessed = readLastAccessTime();
+    readKeysIntoMemory(privateProps);
 
-    const get = (key) => {
-        const tier = index[key];
-        const now = Date.now();
+    const get = (privateProps, key) => {
         // lastAccessed is maintained in memory prior to the first invocation of this method
-        const elapsedMilliseconds = now - lastAccessed;
-        conditionallyClearItem(key, tier, elapsedMilliseconds);
-        setLastAccessTime();
-        return inMemoryStorage[key];
+        setLastAccessTime(privateProps);
+        return privateProps.inMemoryStorage[key];
     };
-    const set = (key, value, tier = persistenceConstants.TIER_E) => {
-        index[key] = tier;
-        inMemoryStorage[key] = value;
-        setLastAccessTime();
-        writeKeysToStorage();
+    const set = (privateProps, key, value, tier = persistenceConstants.TIER_E) => {
+        privateProps.index[key] = tier;
+        privateProps.inMemoryStorage[key] = value;
+        setLastAccessTime(privateProps);
+        writeKeysToStorage(privateProps);
     };
-    const remove = (key) => {
-        delete index[key];
-        delete inMemoryStorage[key];
+    const remove = (privateProps, key) => {
+        delete privateProps.index[key];
+        delete privateProps.inMemoryStorage[key];
         const longPastExpiredDate = new Date(1970, 1, 1, 0, 0, 0, 0);
         const cookies = document.cookie;
         cookies.split(/;[ ]?/).forEach((keyValPair) => {
             const crumbKey = keyValPair.split('=')[0];
-            const keyPrefix = crumbPrefix + key;
+            const keyPrefix = privateProps.crumbPrefix + key;
             if (crumbKey.indexOf(keyPrefix) !== -1) {
                 document.cookie = `${key}=;expires=${longPastExpiredDate.toUTCString()};path=/`;
             }
         });
-        setLastAccessTime();
-        writeKeysToStorage();
+        setLastAccessTime(privateProps);
+        writeKeysToStorage(privateProps);
     };
-    const reset = (tier) => {
+    const reset = (privateProps, tier) => {
         const longPastExpiredDate = new Date(1970, 1, 1, 0, 0, 0, 0);
         const cookies = document.cookie;
         cookies.split(/;[ ]?/).forEach((keyValPair) => {
             const crumbKey = keyValPair.split('=')[0];
-            if (crumbKey.indexOf(crumbPrefix) !== -1) {
-                const strippedKey = crumbKey.substr(crumbKey.indexOf(crumbPrefix)).split('-')[0];
-                if (tier >= index[strippedKey]) {
+            if (crumbKey.indexOf(privateProps.crumbPrefix) !== -1) {
+                const strippedKey = crumbKey.substr(crumbKey.indexOf(privateProps.crumbPrefix)).split('-')[0];
+                if (tier >= privateProps.index[strippedKey]) {
                     // zero out the value and set the expiration date to the epoch value
                     // the browser will handle removing the cookie
                     document.cookie = `${crumbKey}=;expires=${longPastExpiredDate.toUTCString()};path=/`;
@@ -358,10 +304,10 @@ const cookieCrumbStorageStrategyImpl = (() => {
 
     // expose the public methods
     const clientStorageInstance = {
-        'get': get,
-        'set': set,
-        'remove': remove,
-        'reset': reset,
+        'get': (key) => get(privateProps, key),
+        'set': (key, value, tier) => set(privateProps, key, value, tier),
+        'remove': (key) => remove(privateProps, key),
+        'reset': (tier) => reset(privateProps, tier),
     };
 
     return clientStorageInstance;

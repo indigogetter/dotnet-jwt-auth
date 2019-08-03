@@ -1,7 +1,8 @@
-import { authConstants } from '../../config/constants';
+import { authConstants, persistenceConstants } from '../../config/constants';
+import clientStorage from '../persistence/clientStorage';
 
-const authLocalStorageItem = localStorage.getItem(authConstants.AUTH_LOCAL_STORAGE_KEY);
-console.log(`retrieved local storage item with key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' and value ${authLocalStorageItem}`);
+const authLocalStorageItem = clientStorage.get(authConstants.AUTH_LOCAL_STORAGE_KEY);
+console.log(`retrieved local storage item with key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' and value ${JSON.stringify(authLocalStorageItem)}`);
 const defaultState = {
     authenticatedUser: null,
     authError: null,
@@ -9,7 +10,7 @@ const defaultState = {
 };
 const initState = {
     ...defaultState,
-    authenticatedUser: (authLocalStorageItem && JSON.parse(authLocalStorageItem)) || null,
+    authenticatedUser: authLocalStorageItem || null,
 };
 
 const authReducer = (state = initState, action) => {
@@ -17,9 +18,8 @@ const authReducer = (state = initState, action) => {
         case authConstants.LOGIN_SUCCESS:
             console.log('login success', action.authResponseDto);
             const authenticatedUser = action.authResponseDto;
-            const authenticatedUserString = JSON.stringify(authenticatedUser);
-            console.log(`setting key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' with value ${authenticatedUserString}`);
-            localStorage.setItem(authConstants.AUTH_LOCAL_STORAGE_KEY, authenticatedUserString);
+            console.log(`setting key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' with value ${JSON.stringify(authenticatedUser)}`);
+            clientStorage.set(authConstants.AUTH_LOCAL_STORAGE_KEY, authenticatedUser, persistenceConstants.TIER_A);
             return {
                 ...state,
                 authenticatedUser,
@@ -34,7 +34,7 @@ const authReducer = (state = initState, action) => {
                 authError: action.err,
             };
         case authConstants.LOGOUT:
-            localStorage.removeItem(authConstants.AUTH_LOCAL_STORAGE_KEY);
+            clientStorage.remove(authConstants.AUTH_LOCAL_STORAGE_KEY);
             console.log('logout success');
             return {
                 ...state,
