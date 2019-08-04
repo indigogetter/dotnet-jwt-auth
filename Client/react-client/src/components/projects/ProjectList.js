@@ -17,8 +17,9 @@ class ProjectList extends Component {
         return (
             <div className="project-list section">
                 { projects && Object.values(projects).map(project => {
+                    console.log(`key: ${project.projectId}`);
                     return (
-                        <Link to={`/project/${project.id}`} key={project.id}>
+                        <Link to={`/project/${project.projectId}`} key={project.projectId}>
                             <ProjectSummary project={project} />
                         </Link>
                     )

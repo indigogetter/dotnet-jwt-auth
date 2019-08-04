@@ -24,7 +24,8 @@ namespace Indigogetter.WebService.Auth.Dtos.Projects
 
         public override string ToString()
         {
-            return $"ProjectId: {ProjectId}, Title: {Title}, Content: {Content}, ProjectOwnerId: {ProjectOwner.UserId}, ProjectCreatedDate: {ProjectCreatedDate}, ProjectModifiedDate: {ProjectModifiedDate}";
+            var projectOwnerId = ProjectOwner == null ? -1 : ProjectOwner.UserId;
+            return $"ProjectId: {ProjectId}, Title: {Title}, Content: {Content}, ProjectOwnerId: {projectOwnerId}, ProjectCreatedDate: {ProjectCreatedDate}, ProjectModifiedDate: {ProjectModifiedDate}";
         }
     }
 }

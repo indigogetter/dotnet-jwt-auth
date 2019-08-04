@@ -68,7 +68,10 @@ namespace Indigogetter.WebService.Auth.Controllers
             if (project == null)
                 return BadRequest(new { Message = "Failed to find project with specified ID." });
 
-            return Ok(_mapper.Map<ReadProjectDto>(project));
+            var projectResponseDto = _mapper.Map<ReadProjectDto>(project);
+            projectResponseDto.ProjectOwner = _mapper.Map<ReadUserDto>(project.User);
+
+            return Ok(projectResponseDto);
         }
 
         [HttpGet("readall")]
@@ -84,7 +87,11 @@ namespace Indigogetter.WebService.Auth.Controllers
             {
                 StartingDate = now,
                 Projects = projects
-                    .Select(project => _mapper.Map<ReadProjectDto>(project))
+                    .Select(project => {
+                        var projectResponseDto = _mapper.Map<ReadProjectDto>(project);
+                        projectResponseDto.ProjectOwner = _mapper.Map<ReadUserDto>(project.User);
+                        return projectResponseDto;
+                    })
                     .ToList()
             });
         }
