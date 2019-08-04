@@ -1,4 +1,4 @@
-import { projectConstants } from '../../config/constants';
+import { persistenceConstants, projectConstants } from '../../config/constants';
 import clientStorage from '../persistence/clientStorage';
 
 // const initState = {
@@ -8,6 +8,18 @@ import clientStorage from '../persistence/clientStorage';
 //         '3': {id: '3', title: 'egg hunt with yoshi', content: 'blah blah blah'},
 //     }
 // };
+
+/**
+ * Notes (8/3/2019):
+ * Need to structure storage such that the caching mechanism expires projects individually
+ * rather than in a single 'projects' chunk.
+ * Also, need to add a limit in projectActions for the number
+ * of items retrieved... or not.
+ */
+
+// consider modifying this item to be an array of keys
+// though, the expiration mechanism will need to be reviewed
+// since tiered data is expired by overall lastAccessTime
 const recentProjectsLocalStorageItem = clientStorage.get(projectConstants.RECENT_PROJECTS_LOCAL_STORAGE_KEY);
 console.log(`retrieved local storage item with key '${projectConstants.RECENT_PROJECTS_LOCAL_STORAGE_KEY}' and value ${JSON.stringify(recentProjectsLocalStorageItem)}`);
 const defaultState = {
@@ -46,7 +58,26 @@ const projectReducer = (state = initState, action) => {
             const { readAllProjectsDto } = action;
             console.log(`get recent projects success`, action);
             console.log(readAllProjectsDto);
-            return state;
+            const { startingDate, projects } = readAllProjectsDto;
+            const mergedProjects = {
+                ...state.projects,
+            };
+            for (let i = 0; i < projects.length; i++) {
+                mergedProjects[projects[i].projectId] = projects[i];
+            }
+            clientStorage.set(
+                projectConstants.RECENT_PROJECTS_LAST_POLL_DATE_STORAGE_KEY,
+                startingDate,
+                persistenceConstants.TIER_C);
+            clientStorage.set(
+                projectConstants.RECENT_PROJECTS_LOCAL_STORAGE_KEY,
+                mergedProjects,
+                persistenceConstants.TIER_C);
+            return {
+                ...state,
+                projects: mergedProjects,
+                lastReadMilliseconds: startingDate.valueOf(),
+            };
         case projectConstants.READ_PROJECTS_MODIFIED_AFTER_DATE_ERROR:
             console.log(`get recent projects error`, action);
             return state;
