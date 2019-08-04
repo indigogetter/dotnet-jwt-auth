@@ -71,6 +71,24 @@ namespace Indigogetter.WebService.Auth.Controllers
             return Ok(_mapper.Map<ReadProjectDto>(project));
         }
 
+        [HttpGet("readall")]
+        [Produces("application/json")]
+        public IActionResult ReadAll([FromQuery]ReadAllProjectsDto readAllProjectsDto)
+        {
+            var currentUserId = _httpContextAccessor.GetCurrentUserId();
+            var currentUser = _userService.Read(currentUserId);
+            var now = DateTime.Now;
+            var projects = _projectService.GetProjectsModifiedAfterDate(currentUser, readAllProjectsDto.StartingDate);
+
+            return Ok(new ReadAllProjectsDto
+            {
+                StartingDate = now,
+                Projects = projects
+                    .Select(project => _mapper.Map<ReadProjectDto>(project))
+                    .ToList()
+            });
+        }
+
         [HttpPost("update")]
         [Consumes("application/json")]
         [Produces("application/json")]

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Indigogetter.Libraries.Models.DotnetJwtAuth;
 
@@ -37,6 +38,14 @@ namespace Indigogetter.WebService.Auth.Services
                 .Include(p => p.User)
                 .Where(p => p.ProjectId == projectId)
                 .FirstOrDefault();
+        }
+
+        public IList<Project> GetProjectsModifiedAfterDate(User requester, DateTime startingDate)
+        {
+            return _dbContext.Project
+                .Include(p => p.User)
+                .Where(p => p.ProjectModifiedDate >= startingDate)
+                .ToList();
         }
 
         public Project UpdateProject(User modifier, long projectId, string title, string content)

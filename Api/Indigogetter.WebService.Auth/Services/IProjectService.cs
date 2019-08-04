@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Indigogetter.Libraries.Models.DotnetJwtAuth;
 
 namespace Indigogetter.WebService.Auth.Services
@@ -7,6 +8,7 @@ namespace Indigogetter.WebService.Auth.Services
     {
         Project CreateProject(User creator, string title, string content);
         Project GetProject(User requester, long projectId);
+        IList<Project> GetProjectsModifiedAfterDate(User requester, DateTime startingDate);
         Project UpdateProject(User modifier, long projectId, string title, string content);
         bool DeleteProject(User requester, long projectId);
     }
