@@ -12,12 +12,9 @@ class ProjectList extends Component {
 
     render() {
         const { projects } = this.props;
-        console.log('projectList');
-        console.log(projects);
         return (
             <div className="project-list section">
                 { projects && Object.values(projects).map(project => {
-                    console.log(`key: ${project.projectId}`);
                     return (
                         <Link to={`/project/${project.projectId}`} key={project.projectId}>
                             <ProjectSummary project={project} />

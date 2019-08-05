@@ -4,6 +4,12 @@ import { connect } from 'react-redux';
 const ProjectDetails = (props) => {
     // const id = props.match.params.id;
     const { id, project } = props;
+    const { projectOwner, projectCreatedDate, projectModifiedDate } = project;
+    const { firstName, lastName } = projectOwner;
+    const initials = ((firstName && firstName.length && firstName[0]) || '') +
+        ((lastName && lastName.length && lastName[0]) || '');
+    const createdDate = new Date(Date.parse(projectCreatedDate));
+    const modifiedDate = new Date(Date.parse(projectModifiedDate));
     if (project) {
         return (
             <div className="container section project-details">
@@ -14,8 +20,9 @@ const ProjectDetails = (props) => {
                     </div>
     
                     <div className="card-action grey lighten-4 grey-text">
-                        <div>Posted by DMU.</div>
-                        <div>July 16, 2019, 2pm</div>
+                        <div>Posted by {initials}.</div>
+                        <div>Created: {createdDate.toLocaleString()}</div>
+                        <div>Modified: {modifiedDate.toLocaleString()}</div>
                     </div>
                 </div>
             </div>

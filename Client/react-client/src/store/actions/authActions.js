@@ -2,7 +2,7 @@ import axios from 'axios';
 import { apiConstants, authConstants } from '../../config/constants';
 
 export const signIn = (credentials) => {
-    return (dispatch, getState) => {
+    return (dispatch) => {
         const url = `${apiConstants.usersController}/authenticate`;
         const data = {
             'username': credentials.username,
@@ -11,6 +11,7 @@ export const signIn = (credentials) => {
         const headers = {
             'Content-Type': 'application/json',
         };
+        dispatch({ type: authConstants.LOGIN, credentials });
         axios.post(
             url,
             data,
@@ -21,13 +22,11 @@ export const signIn = (credentials) => {
         }).catch((err) => {
             dispatch({ type: authConstants.LOGIN_ERROR, err });
         });
-
-        dispatch({ type: authConstants.LOGIN, credentials });
     }
 };
 
 export const signOut = () => {
-    return (dispatch, getState) => {
+    return (dispatch) => {
         // modify this to allow axios to post to 'users/invalidate' the refresh token
         dispatch({ type: authConstants.LOGOUT });
     }
