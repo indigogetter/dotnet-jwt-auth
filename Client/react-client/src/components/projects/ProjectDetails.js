@@ -1,9 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
 
 const ProjectDetails = (props) => {
-    // const id = props.match.params.id;
-    const { id, project } = props;
+    const { authenticatedUser, id, project } = props;
+    if (!authenticatedUser || !authenticatedUser.token) {
+        return <Redirect to='/signin' />
+    }
     const { projectOwner, projectCreatedDate, projectModifiedDate } = project;
     const { firstName, lastName } = projectOwner;
     const initials = ((firstName && firstName.length && firstName[0]) || '') +
@@ -37,13 +40,14 @@ const ProjectDetails = (props) => {
 }
 
 const mapStateToProps = (state, ownProps) => {
-    console.log(state);
-    console.log(ownProps);
+    // console.log(state);
+    // console.log(ownProps);
     const id = ownProps.match.params.id;
     const project = state.project.projects
         ? state.project.projects[id]
         : null;
     return {
+        authenticatedUser: state.auth.authenticatedUser,
         id,
         project
     };

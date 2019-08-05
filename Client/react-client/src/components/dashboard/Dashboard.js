@@ -1,12 +1,16 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
 import Notifications from './Notifications';
 import ProjectList from '../projects/ProjectList';
-import { connect } from 'react-redux';
 
 class Dashboard extends Component {
     render() {
         // console.log(this.props);
-        const { projects } = this.props;
+        const { authenticatedUser, projects } = this.props;
+        if (!authenticatedUser || !authenticatedUser.token) {
+            return <Redirect to='/signin' />
+        }
         return (
             <div className="dashboard container">
                 <div className="row">
@@ -24,6 +28,7 @@ class Dashboard extends Component {
 
 const mapStateToProps = (state) => {
     return {
+        authenticatedUser: state.auth.authenticatedUser,
         projects: state.project.projects,
     }
 }

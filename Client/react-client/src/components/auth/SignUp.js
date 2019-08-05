@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
 
 class SignUp extends Component {
     state = {
@@ -20,6 +22,10 @@ class SignUp extends Component {
     }
 
     render() {
+        const { authenticatedUser } = this.props;
+        if (!!authenticatedUser && !!authenticatedUser.token) {
+            return <Redirect to='/' />
+        }
         return (
             <div className="container">
                 <form onSubmit={this.handleSubmit} className="white">
@@ -49,4 +55,10 @@ class SignUp extends Component {
     }
 }
 
-export default SignUp;
+const mapStateToProps = (state) => {
+    return {
+        authenticatedUser: state.auth.authenticatedUser,
+    }
+};
+
+export default connect(mapStateToProps)(SignUp);

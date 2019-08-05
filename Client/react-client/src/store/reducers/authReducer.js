@@ -34,11 +34,37 @@ const authReducer = (state = initState, action) => {
                 authError: action.err,
             };
         case authConstants.LOGOUT:
-            clientStorage.remove(authConstants.AUTH_LOCAL_STORAGE_KEY);
+            // clientStorage.remove(authConstants.AUTH_LOCAL_STORAGE_KEY);
+            // clear all local storage when the client logs out
+            // or the action is triggered by token expiration
+            clientStorage.reset(persistenceConstants.TIER_A);
             console.log('logout success');
             return {
                 ...state,
                 ...defaultState,
+            };
+        case authConstants.REFRESH_TOKEN:
+            return state;
+        case authConstants.REFRESH_TOKEN_SUCCESS:
+            console.log('refresh token success', action.refreshTokenResponseDto);
+            const refreshedUser = action.refreshTokenResponseDto;
+            console.log(`setting key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' with value ${JSON.stringify(refreshedUser)}`);
+            clientStorage.set(authConstants.AUTH_LOCAL_STORAGE_KEY, refreshedUser, persistenceConstants.TIER_A);
+            return {
+                ...state,
+                authenticatedUser: refreshedUser,
+                authError: null,
+                authErrorMessage: null,
+            };
+        case authConstants.REFRESH_TOKEN_ERROR:
+            // clear all local storage when the refresh token fails
+            clientStorage.reset(persistenceConstants.TIER_A);
+            console.log('refresh token error');
+            return {
+                ...state,
+                ...defaultState,
+                authError: action.err,
+                authErrorMessage: 'Refresh token failed to reauthenticate user.'
             };
         default:
             return state;

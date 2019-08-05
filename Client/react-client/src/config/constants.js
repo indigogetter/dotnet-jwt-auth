@@ -14,6 +14,10 @@ export const authConstants = {
     'LOGIN_ERROR': 'LOGIN_ERROR',
 
     'LOGOUT': 'LOGOUT',
+
+    'REFRESH_TOKEN': 'REFRESH_TOKEN',
+    'REFRESH_TOKEN_SUCCESS': 'REFRESH_TOKEN_SUCCESS',
+    'REFRESH_TOKEN_ERROR': 'REFRESH_TOKEN_ERROR',
 };
 
 export const projectConstants = {
