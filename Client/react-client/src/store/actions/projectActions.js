@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { apiConstants, projectConstants } from '../../config/constants';
 
-export const createProject = (authenticatedUser, project) => {
+export const createProject = (authenticatedUser, project, successCallback) => {
     return (dispatch) => {
         // const authenticatedUser = getState().auth.authenticatedUser;
         // make async call to database
@@ -27,6 +27,7 @@ export const createProject = (authenticatedUser, project) => {
         ).then((response) => {
             const projectDto = response.data;
             dispatch({ type: projectConstants.CREATE_PROJECT_SUCCESS, project: projectDto });
+            successCallback();
         }).catch((err) => {
             dispatch({ type: projectConstants.CREATE_PROJECT_ERROR, err });
         });

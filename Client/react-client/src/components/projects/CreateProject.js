@@ -18,8 +18,8 @@ class CreateProject extends Component {
     handleSubmit = (e) => {
         e.preventDefault();
         // console.log(this.state);
-        this.props.createProject(this.props.authenticatedUser, this.state);
-        this.props.history.push('/');
+        const successCallback = () => this.props.history.push('/');
+        this.props.createProject(this.props.authenticatedUser, this.state, successCallback);
     }
 
     render() {
@@ -56,7 +56,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        createProject: (authenticatedUser, project) => dispatch(createProject(authenticatedUser, project))
+        createProject: (authenticatedUser, project, successCallback) => dispatch(createProject(authenticatedUser, project, successCallback)),
     }
 }
 
