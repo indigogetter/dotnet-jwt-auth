@@ -1,9 +1,11 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
+import { signUp } from '../../store/actions/authActions';
 
 class SignUp extends Component {
     state = {
+        username: '',
         email: '',
         password: '',
         firstName: '',
@@ -18,11 +20,12 @@ class SignUp extends Component {
 
     handleSubmit = (e) => {
         e.preventDefault();
-        console.log(this.state);
+        // console.log(this.state);
+        this.props.signUp(this.state);
     }
 
     render() {
-        const { authenticatedUser } = this.props;
+        const { authenticatedUser, authErrorMessage } = this.props;
         if (!!authenticatedUser && !!authenticatedUser.token) {
             return <Redirect to='/' />
         }
@@ -30,6 +33,10 @@ class SignUp extends Component {
             <div className="container">
                 <form onSubmit={this.handleSubmit} className="white">
                     <h5 className="grey-text text-darken-3">Registration</h5>
+                    <div className="input-field">
+                        <label htmlFor="username">Username</label>
+                        <input type="text" id="username" onChange={this.handleChange} />
+                    </div>
                     <div className="input-field">
                         <label htmlFor="email">Email</label>
                         <input type="email" id="email" onChange={this.handleChange} />
@@ -48,6 +55,9 @@ class SignUp extends Component {
                     </div>
                     <div className="input-field">
                         <button className="btn pink lighten-1 z-depth-0">Register</button>
+                        <div className="red-text center">
+                            { authErrorMessage && <p>{authErrorMessage}</p> }
+                        </div>
                     </div>
                 </form>
             </div>
@@ -58,7 +68,15 @@ class SignUp extends Component {
 const mapStateToProps = (state) => {
     return {
         authenticatedUser: state.auth.authenticatedUser,
+        authError: state.auth.authError,
+        authErrorMessage: state.auth.authErrorMessage,
     }
 };
 
-export default connect(mapStateToProps)(SignUp);
+const mapDispatchToProps = (dispatch) => {
+    return {
+        signUp: (newUser) => dispatch(signUp(newUser)),
+    }
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(SignUp);

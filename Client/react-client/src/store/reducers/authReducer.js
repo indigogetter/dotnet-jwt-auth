@@ -66,6 +66,28 @@ const authReducer = (state = initState, action) => {
                 authError: action.err,
                 authErrorMessage: 'Refresh token failed to reauthenticate user.'
             };
+        case authConstants.CREATE_NEW_USER:
+            console.log('create new user');
+            return state;
+        case authConstants.CREATE_NEW_USER_SUCCESS:
+            console.log('create new user success');
+            const createdUser = action.createResponseDto;
+            console.log(`setting key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' with value ${JSON.stringify(createdUser)}`);
+            clientStorage.set(authConstants.AUTH_LOCAL_STORAGE_KEY, createdUser, persistenceConstants.TIER_A);
+            return {
+                ...state,
+                authenticatedUser: createdUser,
+                authError: null,
+                authErrorMessage: null,
+            };
+        case authConstants.CREATE_NEW_USER_ERROR:
+            console.log('create new user error');
+            return {
+                ...state,
+                ...defaultState,
+                authError: action.err,
+                authErrorMessage: 'Refresh token failed to reauthenticate user.'
+            };
         default:
             return state;
     }

@@ -10,16 +10,22 @@ export const createProject = (authenticatedUser, project) => {
             'title': project.title,
             'content': project.content,
         };
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authenticatedUser && authenticatedUser.token}`,
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authenticatedUser && authenticatedUser.token}`,
+            }
         };
+        console.log(`url: ${url}`);
+        console.log(`data: ${JSON.stringify(data)}`);
+        console.log(`headers: ${JSON.stringify(config)}`);
         dispatch({ type: projectConstants.CREATE_PROJECT, project });
         axios.post(
             url,
             data,
-            headers
-        ).then((projectDto) => {
+            config
+        ).then((response) => {
+            const projectDto = response.data;
             dispatch({ type: projectConstants.CREATE_PROJECT_SUCCESS, project: projectDto });
         }).catch((err) => {
             dispatch({ type: projectConstants.CREATE_PROJECT_ERROR, err });

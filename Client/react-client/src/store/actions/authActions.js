@@ -31,3 +31,32 @@ export const signOut = () => {
         dispatch({ type: authConstants.LOGOUT });
     }
 };
+
+export const signUp = (newUser) => {
+    return (dispatch) => {
+        const url = `${apiConstants.usersController}/create`;
+        const data = {
+            'username': newUser.username,
+            'email': newUser.email,
+            'password': newUser.password,
+            'firstName': newUser.firstName,
+            'lastName': newUser.lastName,
+        };
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        dispatch({ type: authConstants.CREATE_NEW_USER, newUser });
+        axios.post(
+            url,
+            data,
+            headers
+        ).then((response) => {
+            const createResponseDto = response.data;
+            dispatch({ type: authConstants.CREATE_NEW_USER_SUCCESS, createResponseDto });
+            // on success, automatically trigger a sign-in action
+            signIn({ 'username': newUser.username, 'password': newUser.password })(dispatch);
+        }).catch((err) => {
+            dispatch({ type: authConstants.CREATE_NEW_USER_ERROR, err });
+        });
+    }
+}

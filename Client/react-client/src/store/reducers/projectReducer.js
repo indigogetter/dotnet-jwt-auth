@@ -38,7 +38,20 @@ const projectReducer = (state = initState, action) => {
             return state;
         case projectConstants.CREATE_PROJECT_SUCCESS:
             console.log('created project', action);
-            return state;
+            const { project } = action;
+            const integratedProjects = {
+                ...state.projects,
+            };
+            integratedProjects[project.projectId] = project;
+            clientStorage.set(
+                projectConstants.RECENT_PROJECTS_LOCAL_STORAGE_KEY,
+                integratedProjects,
+                persistenceConstants.TIER_C
+            );
+            return {
+                ...state,
+                projects: integratedProjects,
+            };
         case projectConstants.CREATE_PROJECT_ERROR:
             console.log(`create project error`, action);
             return state;

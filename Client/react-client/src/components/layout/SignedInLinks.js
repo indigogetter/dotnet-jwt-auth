@@ -5,6 +5,8 @@ import { signOut } from '../../store/actions/authActions';
 
 const SignedInLinks = (props) => {
     const { authenticatedUser } = props;
+    const initials = ((authenticatedUser && authenticatedUser.firstName && authenticatedUser.firstName[0]) || '') + 
+        ((authenticatedUser && authenticatedUser.lastName && authenticatedUser.lastName[0]) || '');
     // check the status of the token each time the dashboard props are updated
     if (!authenticatedUser || (Date.parse(authenticatedUser.tokenExpirationDate).valueOf() < Date.now())) {
         // if the token expired:
@@ -16,7 +18,7 @@ const SignedInLinks = (props) => {
         <ul className="right">
             <li><NavLink to="/create">New Project</NavLink></li>
             <li><NavLink to="/" onClick={props.signOut}>Log Out</NavLink></li>
-            <li><NavLink to="/" className="btn btn-floating pink lighten-1">DMU</NavLink></li>
+            <li><NavLink to="/" className="btn btn-floating pink lighten-1">{initials}</NavLink></li>
         </ul>
     )
 }
