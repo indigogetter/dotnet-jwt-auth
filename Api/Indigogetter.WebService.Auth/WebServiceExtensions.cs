@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Security.Claims;
 
@@ -17,5 +18,15 @@ namespace Indigogetter.WebService.Auth
         {
             return Convert.ToInt64(httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value);
         }
+    }
+
+    public class NameUserIdProvider : IUserIdProvider
+    {
+        public string GetUserId(HubConnectionContext connectionContext) => connectionContext.User?.Identity?.Name;
+    }
+
+    public class EmailBasedUserIdProvider : IUserIdProvider
+    {
+        public string GetUserId(HubConnectionContext connectionContext) => connectionContext.User?.FindFirst(ClaimTypes.Email)?.Value;
     }
 }

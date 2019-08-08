@@ -9,6 +9,22 @@ namespace Indigogetter.WebService.Auth
     {
         private static readonly RNGCryptoServiceProvider _randomNumberGenerator = new RNGCryptoServiceProvider();
 
+        public static byte[] GenerateInitialVector()
+        {
+            var initialVector = new byte[Constants.InitialVectorLength];
+            _randomNumberGenerator.GetBytes(initialVector);
+
+            return initialVector;
+        }
+
+        public static byte[] GenerateAesKey()
+        {
+            var aesKey = new byte[Constants.AesKeyLength];
+            _randomNumberGenerator.GetBytes(aesKey);
+
+            return aesKey;
+        }
+
         public static byte[] GenerateSalt()
         {
             var salt = new byte[Constants.SaltLength];

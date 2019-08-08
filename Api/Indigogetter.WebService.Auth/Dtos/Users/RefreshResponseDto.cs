@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Indigogetter.WebService.Auth.Dtos.Users
 {
     [Serializable]
-    public class AuthResponseDto
+    public class RefreshResponseDto
     {
         public string Token { get; set; }
         public string RefreshToken { get; set; }

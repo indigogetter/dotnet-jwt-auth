@@ -53,16 +53,29 @@ const projectReducer = (state = initState, action) => {
                 projects: integratedProjects,
             };
         case projectConstants.CREATE_PROJECT_ERROR:
-            console.log(`create project error`, action);
+            console.error(`create project error`, action);
             return state;
         case projectConstants.READ_PROJECT:
             console.log(`read project`, action);
             return state;
         case projectConstants.READ_PROJECT_SUCCESS:
             console.log(`read project success`, action);
-            return state;
+            const observedProject = action.projectDto;
+            const observedProjectCollection = {
+                ...state.projects,
+            };
+            observedProjectCollection[observedProject.projectId] = observedProject;
+            clientStorage.set(
+                projectConstants.RECENT_PROJECTS_LOCAL_STORAGE_KEY,
+                observedProjectCollection,
+                persistenceConstants.TIER_C
+            );
+            return {
+                ...state,
+                projects: observedProjectCollection,
+            };
         case projectConstants.READ_PROJECT_ERROR:
-            console.log(`read project error`, action);
+            console.error(`read project error`, action);
             return state;
         case projectConstants.READ_PROJECTS_MODIFIED_AFTER_DATE:
             console.log(`get recent projects`, action);
@@ -92,7 +105,7 @@ const projectReducer = (state = initState, action) => {
                 lastReadMilliseconds: startingDate.valueOf(),
             };
         case projectConstants.READ_PROJECTS_MODIFIED_AFTER_DATE_ERROR:
-            console.log(`get recent projects error`, action);
+            console.error(`get recent projects error`, action);
             return state;
         default:
             return state;

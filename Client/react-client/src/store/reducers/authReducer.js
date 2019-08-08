@@ -44,10 +44,11 @@ const authReducer = (state = initState, action) => {
                 ...defaultState,
             };
         case authConstants.REFRESH_TOKEN:
+            console.log('attempting to refresh auth token');
             return state;
         case authConstants.REFRESH_TOKEN_SUCCESS:
-            console.log('refresh token success', action.refreshTokenResponseDto);
-            const refreshedUser = action.refreshTokenResponseDto;
+            console.log('refresh token success', action.refreshResponseDto);
+            const refreshedUser = action.refreshResponseDto;
             console.log(`setting key '${authConstants.AUTH_LOCAL_STORAGE_KEY}' with value ${JSON.stringify(refreshedUser)}`);
             clientStorage.set(authConstants.AUTH_LOCAL_STORAGE_KEY, refreshedUser, persistenceConstants.TIER_A);
             return {
@@ -59,7 +60,7 @@ const authReducer = (state = initState, action) => {
         case authConstants.REFRESH_TOKEN_ERROR:
             // clear all local storage when the refresh token fails
             clientStorage.reset(persistenceConstants.TIER_A);
-            console.log('refresh token error');
+            console.error('refresh token error');
             return {
                 ...state,
                 ...defaultState,
@@ -81,7 +82,7 @@ const authReducer = (state = initState, action) => {
                 authErrorMessage: null,
             };
         case authConstants.CREATE_NEW_USER_ERROR:
-            console.log('create new user error');
+            console.error('create new user error');
             return {
                 ...state,
                 ...defaultState,

@@ -6,8 +6,9 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
 {
     public class DotnetJwtAuthContext : DbContext
     {
-        public virtual DbSet<User> User { get; set; }
         public virtual DbSet<Project> Project { get; set; }
+        public virtual DbSet<RefreshToken> RefreshToken { get; set; }
+        public virtual DbSet<User> User { get; set; }
 
         public DotnetJwtAuthContext() { }
 
@@ -29,8 +30,8 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
                 entity.Property(e => e.Content).HasColumnType("longtext");
 
                 entity.Property(e => e.IsDeleted)
-                    .HasColumnType("tinyint(4)")
-                    .HasDefaultValueSql("0");
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("b'0'");
 
                 entity.Property(e => e.ProjectCreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -47,6 +48,39 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
                     .WithMany(p => p.Project)
                     .HasForeignKey(d => d.UserId)
                     .HasConstraintName("project_ibfk_1");
+            });
+
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.ToTable("refreshtoken", "dotnetjwtauth");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("FK_RefreshToken_UserId");
+
+                entity.Property(e => e.RefreshTokenId).HasColumnType("bigint(20)");
+
+                entity.Property(e => e.EncryptionKey)
+                    .IsRequired()
+                    .HasColumnType("binary(16)");
+
+                entity.Property(e => e.InitialVector)
+                    .IsRequired()
+                    .HasColumnType("binary(16)");
+
+                entity.Property(e => e.IsRevoked)
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("b'0'");
+
+                entity.Property(e => e.RefreshTokenCreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.RefreshTokenModifiedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.UserId).HasColumnType("bigint(20)");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.RefreshToken)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("refreshtoken_ibfk_1");
             });
 
             modelBuilder.Entity<User>(entity =>
@@ -66,12 +100,12 @@ namespace Indigogetter.Libraries.Models.DotnetJwtAuth
                     .IsUnicode(false);
 
                 entity.Property(e => e.IsDeleted)
-                    .HasColumnType("tinyint(4)")
-                    .HasDefaultValueSql("0");
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("b'0'");
 
                 entity.Property(e => e.IsLocked)
-                    .HasColumnType("tinyint(4)")
-                    .HasDefaultValueSql("0");
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("b'0'");
 
                 entity.Property(e => e.LastName)
                     .IsRequired()

@@ -10,6 +10,7 @@ namespace Indigogetter.WebService.Auth.Profiles.Users
         public AuthProfile()
         {
             CreateMap<User, AuthResponseDto>();
+            CreateMap<User, RefreshResponseDto>();
         }
     }
 }

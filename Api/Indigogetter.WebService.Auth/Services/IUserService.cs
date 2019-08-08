@@ -12,5 +12,7 @@ namespace Indigogetter.WebService.Auth.Services
         User UpdateProfile(long userId, string username, string email, string firstName, string lastName);
         User UpdatePassword(long userId, string password);
         bool Delete(long userId);
+        string EncodeRefreshToken(string username, DateTime expiryDate);
+        bool ValidateRefreshToken(string encodedRefreshToken, out DecodedRefreshTokenClaims refreshTokenClaims, out User user);
     }
 }

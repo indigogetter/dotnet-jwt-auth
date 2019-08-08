@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ using AutoMapper;
 using MySql.Data.EntityFrameworkCore.Extensions;
 using Indigogetter.WebService.Auth.Config;
 using Indigogetter.WebService.Auth.Services;
+using Indigogetter.WebService.Auth.Hubs;
 using Indigogetter.Libraries.Models.DotnetJwtAuth;
 
 namespace Indigogetter.WebService.Auth
@@ -38,8 +40,20 @@ namespace Indigogetter.WebService.Auth
             // and the data transfer objects (Indigogetter.WebService.Auth.Dtos).
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-            services.AddCors();
+            // Allow CORS but the policy must be well-defined to enable token authentication via SignalR requests.
+            // Specifically, the connection requests will fail if the origins are not specified.
+            var corsPolicyConfigSection = Configuration.GetSection("CorsPolicyConfig");
+            var allowedOrigins = corsPolicyConfigSection.GetValue<string>("AllowedOrigins");
+            services.AddCors(options => options.AddDefaultPolicy(policyBuilder =>
+            {
+                policyBuilder.AllowAnyMethod()
+                    .AllowCredentials()
+                    .AllowAnyHeader()
+                    .WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            }));
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddSignalR();
 
             // Pull in the connection string from the environment variables.
             // On Windows environments this may be set via:
@@ -78,11 +92,29 @@ namespace Indigogetter.WebService.Auth
                     // This value is used to encrypt/decrypt the JWT token returned to the user on sign-in and, while the
                     // encoded token is sent to the user, the security key is not.
                     IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+                    // Define the method to check that the token is not expired.  The default implementation has proven to work.
+                    // LifetimeValidator = (before, expires, token, param) => expires > DateTime.UtcNow,
 
                     ValidateIssuerSigningKey = true,
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    // Allow the JWT authentication handler to access the token from the query string when
+                    // the client (SignalR) is unable to include it in the Authorization header directly.
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        var isProjectHubPath = path.StartsWithSegments(Constants.ProjectsHubRoute);
+                        var isUsersHubPath = path.StartsWithSegments(Constants.UsersHubRoute);
+                        Console.WriteLine($"Encountered message. Path: [{path}], IsProjectHubPath: [{isProjectHubPath}], IsUsersHubPath: [{isUsersHubPath}], AccessToken: [{accessToken}]");
+                        if (!String.IsNullOrEmpty(accessToken) && (isProjectHubPath || isUsersHubPath))
+                            context.Token = accessToken;
+                        return Task.CompletedTask;
+                    },
                 };
             });
 
@@ -92,6 +124,11 @@ namespace Indigogetter.WebService.Auth
 
             // Register the HttpContextAccessor to enable us to retrieve claims from the JWT, such as UserId.
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+            // Register the HubConnectionContext accessor to implicitly retrieve user id on SignalR communications.
+            // Alternatively, the EmailBasedUserIdProvider may be used if the email claim should be used as the userId,
+            // but that is not inline with how this API is setup (i.e. email addresses may be updated with a User record).
+            services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
             // Scoped instances are generated anew for each request.
             services.AddScoped<IUserService, UserService>();
@@ -111,15 +148,20 @@ namespace Indigogetter.WebService.Auth
             }
 
             // Set the global cors policy.
-            app.UseCors(policyBuilder => policyBuilder
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader());
+            app.UseCors();
 
             // Indicate that the hosted application should use the configured default authentication scheme (JWT).
             app.UseAuthentication();
 
             // app.UseHttpsRedirection();
+
+            // Register SignalR middleware for push notifications.
+            app.UseSignalR(routes =>
+            {
+                routes.MapHub<ProjectsHub>(Constants.ProjectsHubRoute);
+                routes.MapHub<UsersHub>(Constants.UsersHubRoute);
+            });
+
             app.UseMvc();
         }
     }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using AutoMapper;
 using Indigogetter.WebService.Auth.Config;
 using Indigogetter.WebService.Auth.Dtos.Projects;
 using Indigogetter.WebService.Auth.Dtos.Users;
+using Indigogetter.WebService.Auth.Hubs;
 using Indigogetter.WebService.Auth.Services;
 using Indigogetter.Libraries.Models.DotnetJwtAuth;
 
@@ -21,6 +23,7 @@ namespace Indigogetter.WebService.Auth.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHubContext<ProjectsHub> _projectHubContext;
         private readonly IAuthConfig _authConfig;
         private readonly IProjectService _projectService;
         private readonly IUserService _userService;
@@ -28,12 +31,14 @@ namespace Indigogetter.WebService.Auth.Controllers
         public ProjectsController(
             IMapper mapper,
             IHttpContextAccessor httpContextAccessor,
+            IHubContext<ProjectsHub> projectHubContext,
             IAuthConfig authConfig,
             IProjectService projectService,
             IUserService userService)
         {
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _projectHubContext = projectHubContext;
             _authConfig = authConfig;
             _projectService = projectService;
             _userService = userService;
@@ -42,7 +47,7 @@ namespace Indigogetter.WebService.Auth.Controllers
         [HttpPost("create")]
         [Consumes("application/json")]
         [Produces("application/json")]
-        public IActionResult Create([FromBody]CreateProjectDto projectDto)
+        public async Task<IActionResult> Create([FromBody]CreateProjectDto projectDto)
         {
             var currentUserId = _httpContextAccessor.GetCurrentUserId();
             var currentUser = _userService.Read(currentUserId);
@@ -51,10 +56,26 @@ namespace Indigogetter.WebService.Auth.Controllers
             if (project == null)
                 return BadRequest(new { Message = "Failed to create project." });
 
-            var projectResponseDto = _mapper.Map<CreateProjectDto>(project);
-            projectResponseDto.ProjectOwner = _mapper.Map<ReadUserDto>(project.User);
+            var createdProjectDto = _mapper.Map<CreateProjectDto>(project);
+            createdProjectDto.ProjectOwner = _mapper.Map<ReadUserDto>(project.User);
 
-            return Ok(projectResponseDto);
+            try
+            {
+                // Notify all subscribers (logged in users) that a new project has been created.
+                await _projectHubContext.Clients
+                    .Groups(Constants.ProjectSubscriberGroupName)
+                    .SendAsync(Constants.ClientProjectNotificationMethodName, new
+                    {
+                        CreatedProjectDto = createdProjectDto,
+                    });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Encountered exception while attempting to publish project creation to subscribers.  Message: {ex.Message}.");
+                Console.WriteLine(ex.StackTrace);
+            }
+
+            return Ok(createdProjectDto);
         }
 
         [HttpGet("read")]
