@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
@@ -12,12 +13,23 @@ namespace Indigogetter.WebService.Auth.Services
 {
     public class UserService : IUserService
     {
+        /**
+         *   The "purpose" passed into CreateProtector is the only chance to anonymize the data.
+         *   Otherwise, anyone that is able to guess the input string will be able to decrypt
+         *   or else encryption/decryption is tied to the host, in which case the servers are
+         *   no longer stateless... recommend using something like AES encryption.
+         *   The RefreshToken table already supports InitialVector and EncryptionKey fields,
+         *   but the exercise of implementing such a solution in EncodeRefreshToken and
+         *   ValidateRefreshToken is left to any consumers of this application.
+         */
         private readonly DotnetJwtAuthContext _dbContext;
+        private readonly IDataProtector _dataProtector;
         private readonly BinaryFormatter _binaryFormatter;
 
-        public UserService(DotnetJwtAuthContext dbContext)
+        public UserService(DotnetJwtAuthContext dbContext, IDataProtectionProvider dataProtectionProvider)
         {
             _dbContext = dbContext;
+            _dataProtector = dataProtectionProvider.CreateProtector(nameof(UserService));
             _binaryFormatter = new BinaryFormatter();
         }
 
@@ -60,23 +72,13 @@ namespace Indigogetter.WebService.Auth.Services
             {
                 Username = username,
                 ExpiryDate = expiryDate,
+                Secret = _dataProtector.Protect(BitConverter.GetBytes(refreshToken.RefreshTokenId)),
             };
             var encodedToken = String.Empty;
 
             using (var serializerStream = new MemoryStream())
-            using (var aesInstance = Aes.Create())
             {
-                var encryptor = aesInstance.CreateEncryptor(refreshTokenEntity.EncryptionKey, refreshToken.InitialVector);
-
-                using (var encryptionMemoryStream = new MemoryStream())
-                using (var cryptoStream = new CryptoStream(encryptionMemoryStream, encryptor, CryptoStreamMode.Write))
-                {
-                    var openSecretBytes = BitConverter.GetBytes(refreshToken.RefreshTokenId);
-                    cryptoStream.Write(openSecretBytes, 0, openSecretBytes.Length);
-                    cryptoStream.Flush();
-                    refreshTokenClaims.Secret = encryptionMemoryStream.ToArray();
-                }
-
+                Console.WriteLine($"{nameof(EncodeRefreshToken)} refreshTokenClaims: [{refreshTokenClaims.ToString()}]");
                 _binaryFormatter.Serialize(serializerStream, refreshTokenClaims);
                 encodedToken = Convert.ToBase64String(serializerStream.ToArray());
             }
@@ -104,21 +106,14 @@ namespace Indigogetter.WebService.Auth.Services
                 if (activeToken == null)
                     return false;
 
-                using (var aesInstance = Aes.Create())
-                {
-                    var decryptor = aesInstance.CreateDecryptor(activeToken.EncryptionKey, activeToken.InitialVector);
+                Console.WriteLine($"{nameof(ValidateRefreshToken)} refreshTokenClaims: [{refreshTokenClaims}]");
+                Console.WriteLine($"{nameof(ValidateRefreshToken)} EncryptionKey: [{BitConverter.ToString(activeToken.EncryptionKey)}], InitialVector: [{BitConverter.ToString(activeToken.InitialVector)}]");
+                var decryptedBytes = _dataProtector.Unprotect(refreshTokenClaims.Secret);
+                var decryptedSecret = BitConverter.ToInt64(decryptedBytes);
+                Console.WriteLine($"{nameof(ValidateRefreshToken)} ActiveRefreshTokenId: {activeToken.RefreshTokenId}, DecryptedTokenId: {decryptedSecret}");
 
-                    using (var decryptionMemoryStream = new MemoryStream(refreshTokenClaims.Secret))
-                    using (var cryptoStream = new CryptoStream(decryptionMemoryStream, decryptor, CryptoStreamMode.Read))
-                    using (var binaryStream = new BinaryReader(cryptoStream))
-                    {
-                        var decryptedSecret = binaryStream.ReadInt64();
-                        Console.WriteLine($"{nameof(ValidateRefreshToken)} ActiveRefreshTokenId: {activeToken.RefreshTokenId}, DecryptedTokenId: {decryptedSecret}");
-
-                        if (activeToken.RefreshTokenId == decryptedSecret)
-                            return true;
-                    }
-                }
+                if (activeToken.RefreshTokenId == decryptedSecret)
+                    return true;
             }
 
             return false;
